@@ -55,7 +55,7 @@ instr sequence
     ; array needs to be initialised or schedkwhen complains
     kevent[][] init 1, 2    
 
-    ; query twice per second
+    ; query three times per second
     ktrig metro 3
     
     ; query on metro returning the frequency/duration pair
