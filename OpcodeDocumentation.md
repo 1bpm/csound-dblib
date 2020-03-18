@@ -41,7 +41,7 @@ Execute a SQL statement returning no results.
 Return a single numeric or string value. Optionally *irow* and *icolumn* can be specified which default to 0 and 0 , ie the first value.
 
 	inumber dbscalar gidb, "SELECT 1, 2, 3", 0, 2
-	Svalue dbscalarstr gidb, "SELECT 'this', 'is', 'a', 'test'"
+	Svalue dbscalar gidb, "SELECT 'this', 'is', 'a', 'test'"
 	
 ### dbarray
 	ires[][] dbarray idb, Squery
@@ -55,7 +55,7 @@ Return a two-dimensional numeric or string array.
 ## k-rate query opcodes
 All opcodes require
 
- - *ktrigger* , which triggers the execution of the statement when the value is 1 or -1. If -1, any future triggers are ignored. For example *ktrigger* can be set to -1 initially and the statement will execute once.
+ - *ktrigger* , which triggers the execution of the statement when the value is 1 or -1. If -1, any future triggers are ignored. For example *ktrigger* can be set to -1 initially and the statement will execute only once.
 
 All opcodes emit
 
@@ -74,7 +74,7 @@ Return a single numeric or string value. Optionally *krow* and *kcolumn* can be 
 
 
 	kdone, knumber dbscalar_k gidb, "SELECT 1, 2, 3", ktrigger, 0, 2
-	kdone, Svalue dbscalarstr_k gidb, "SELECT 'this', 'is', 'a', 'test'", ktrigger
+	kdone, Svalue dbscalar_k gidb, "SELECT 'this', 'is', 'a', 'test'", ktrigger
 	
 ### dbarray_k
 	kdone, kres[][] dbarray_k idb, Squery, ktrigger
@@ -85,7 +85,7 @@ Return a two-dimensional numeric or string array. Note: any operations on the re
 	kdone, Sres[][] dbarray_k gidb, "SELECT 'this', 'is' UNION SELECT 'a', 'test'", ktrigger
 
 ## k-rate query opcodes (blocking)
-These opcodes will block the execution of the k-cycle until complete so should not be used for realtime purposes. Ie offline rendering or special operations (eg in example 7) should be fine.
+These opcodes will block the execution of the k-cycle until complete so should not be used for realtime purposes. Ie offline rendering or special operations (eg in example 7) are special cases in which they could be used.
 
 
 ### dbexec_kb
@@ -96,7 +96,7 @@ Execute a SQL statement returning no results.
 
 ### dbscalar_kb
 	kres dbscalar_kb idb, Squery [, krow] [, kcolumn]
-	Sres dbscalarstr_kb idb, Squery [, krow] [, kcolumn]
+	Sres dbscalar_kb idb, Squery [, krow] [, kcolumn]
 Return a single numeric or string value. Optionally *krow* and *kcolumn* can be specified which default to 0 and 0 , ie the first value.
 
 	knumber dbscalar_kb gidb, "SELECT 1, 2, 3", 0, 2
