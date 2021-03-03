@@ -37,10 +37,6 @@ void PostgresConnection::Init(csnd::Csound* csound, LoginData* login) {
             );
   
     conn = new pqxx::connection(connectionString);
-    
-    // ignore notices
-    std::auto_ptr<pqxx::noticer> np(new(pqxx::nonnoticer));
-    conn->set_noticer(np);
 
     if (!conn->is_open()) {
         throw std::runtime_error("Connection not open");
@@ -111,9 +107,9 @@ void PostgresConnection::ToArray(pqxx::result result, csnd::Csound* csound, ARRA
 
     int index = 0;
     for (int rowNum = 0; rowNum < result.size(); ++rowNum) {
-        const pqxx::result::tuple row = result[rowNum];
+        const pqxx::row row = result[rowNum];
         for (int colNum = 0; colNum < row.size(); ++colNum) {
-            const pqxx::result::field field = row[colNum];
+            const pqxx::field field = row[colNum];
             if (asString) {
                 char* item = field.c_str();
                 strings[index].size = strlen(item) + 1;
