@@ -23,18 +23,18 @@
 #define POSTGRESQL_H
 
 #include <plugin.h>
-#include <pqxx/pqxx> 
+#include "libpq-fe.h"
 #include "connection.h"
 
 struct PostgresConnection {
-    pqxx::connection* conn;
+    PGconn* conn;
     void Init(csnd::Csound* csound, LoginData* login);
     void Close(csnd::Csound* csound);
     void Exec(char* sql);
-    pqxx::result Query(char *sql);
+    PGresult* Query(char *sql);
     MYFLT Scalar(char* sql, int row, int col);
     char* ScalarString(char* sql, int row, int col);
-    void ToArray(pqxx::result result, csnd::Csound* csound, ARRAYDAT* array, bool asString);
+    void ToArray(PGresult* result, csnd::Csound* csound, ARRAYDAT* array, bool asString);
     void ArrayQuery(char* sql, csnd::Csound* csound, ARRAYDAT* array);
     void ArrayQueryString(char* sql, csnd::Csound* csound, ARRAYDAT* array);
 };

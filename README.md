@@ -24,9 +24,9 @@ Connector/C++ (https://dev.mysql.com/downloads/connector/cpp/)
 	# apt get install libmysqlcppconn-dev
 
 ### PostgreSQL
-libpqxx (http://pqxx.org/development/libpqxx/wiki/DownloadPage)
+libpq (https://www.postgresql.org/download/)
 
-	# apt get install libpqxx-dev
+	# apt get install libpq-dev
 	
 ### SQLite
 libsqlite (https://www.sqlite.org/download.html)

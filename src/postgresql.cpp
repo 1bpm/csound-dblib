@@ -21,14 +21,13 @@
 
 #include <plugin.h>
 #include <iostream>
-#include <pqxx/pqxx> 
+#include "libpq-fe.h"
 #include "connection.h"
 #include "postgresql.h"
 
 
 
 void PostgresConnection::Init(csnd::Csound* csound, LoginData* login) {
-    //conn = (pqxx::connection*) csound->malloc(sizeof(pqxx::connection));
     char connectionString[256];
     
     snprintf(connectionString, 256,
@@ -36,90 +35,95 @@ void PostgresConnection::Init(csnd::Csound* csound, LoginData* login) {
             login->dbName, login->dbUser, login->dbPass, login->dbHost
             );
   
-    conn = new pqxx::connection(connectionString);
+    conn = PQconnectdb(connectionString);
 
-    if (!conn->is_open()) {
+    if (PQstatus(conn) == CONNECTION_BAD) {
         throw std::runtime_error("Connection not open");
     }
 }
 
 void PostgresConnection::Close(csnd::Csound* csound) {
-    if (conn->is_open()) {
-        conn->disconnect();
-    }
-    delete conn;
+	PQfinish(conn);
 }
 
 void PostgresConnection::Exec(char* sql) {
-    pqxx::nontransaction nt(*conn);
-    nt.exec(sql);
+	PGresult* result = PQexec(conn, sql);
+	PQclear(result);
 }
 
-pqxx::result PostgresConnection::Query(char* sql) {
-    pqxx::nontransaction nt(*conn);
-    pqxx::result result(nt.exec(sql));
-    return result;
+PGresult* PostgresConnection::Query(char* sql) {
+    return PQexec(conn, sql);
 }
 
 MYFLT PostgresConnection::Scalar(char* sql, int row, int col) {
-    pqxx::result result = Query(sql);
+    PGresult* result = Query(sql);
 
-    // checks as libpqxx not throwing if this happens
-    if (row > result.size() - 1) {
+	int rows = PQntuples(result);
+	int cols = PQnfields(result);
+    
+    if (row > rows - 1) {
         throw std::runtime_error("row number out of range");
     }
-    if (col > result[row].size() -1) {
+    if (col > cols - 1) {
         throw std::runtime_error("column number out of range");
     }
 
-    return result[row][col].as<MYFLT>();
+    MYFLT value = (MYFLT) atof(PQgetvalue(result, row, col));
+	PQclear(result);
+	return value;
 }
 
 char* PostgresConnection::ScalarString(char* sql, int row, int col) {
-    pqxx::result result = Query(sql);
+    PGresult* result = Query(sql);
 
-    // checks as libpqxx not throwing if this happens
-    if (row > result.size() - 1) {
+	int rows = PQntuples(result);
+	int cols = PQnfields(result);
+
+    if (row > rows - 1) {
         throw std::runtime_error("row number out of range");
     }
-    if (col > result[row].size() -1) {
+    if (col > cols -1) {
         throw std::runtime_error("column number out of range");
     }
 
-    return result[row][col].c_str();
+	char* value = (char*) PQgetvalue(result, row, col);
+	PQclear(result);
+	return value;
+
 
 }
 
 
-void PostgresConnection::ToArray(pqxx::result result, csnd::Csound* csound, ARRAYDAT* array, bool asString) {
-    int totalResults = result.size() * result[0].size();
+void PostgresConnection::ToArray(PGresult* result, csnd::Csound* csound, ARRAYDAT* array, bool asString) {
+	int rows = PQntuples(result);
+	int cols = PQnfields(result);
+    int totalResults = rows * cols;
     array->sizes = csound->calloc(sizeof(int32_t) * 2);
-    array->sizes[0] = result.size();
-    array->sizes[1] = result[0].size();
+    array->sizes[0] = rows;
+    array->sizes[1] = cols;
     array->dimensions = 2;
     CS_VARIABLE *var = array->arrayType->createVariable(csound, NULL);
     array->arrayMemberSize = var->memBlockSize;
-    array->data = csound->calloc(var->memBlockSize * totalResults);
+    array->data = (MYFLT*) csound->calloc(var->memBlockSize * totalResults);
     STRINGDAT* strings;
     if (asString) {
         strings = (STRINGDAT*) array->data;
     }
 
     int index = 0;
-    for (int rowNum = 0; rowNum < result.size(); ++rowNum) {
-        const pqxx::row row = result[rowNum];
-        for (int colNum = 0; colNum < row.size(); ++colNum) {
-            const pqxx::field field = row[colNum];
+    for (int rowNum = 0; rowNum < rows; ++rowNum) {
+        for (int colNum = 0; colNum < cols; ++colNum) {
             if (asString) {
-                char* item = field.c_str();
+                char* item = (char*) PQgetvalue(result, rowNum, colNum);
                 strings[index].size = strlen(item) + 1;
                 strings[index].data = csound->strdup(item);
             } else {
-                array->data[index] = field.as<MYFLT>();
+                array->data[index] = (MYFLT) atof(PQgetvalue(result, rowNum, colNum));
             }
             index++;
         }
     }
+	PQclear(result);
 }
 
 void PostgresConnection::ArrayQueryString(char* sql, csnd::Csound* csound, ARRAYDAT* array) {

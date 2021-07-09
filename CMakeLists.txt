@@ -26,7 +26,7 @@ set(BUILDING_CSOUND_PLUGINS ON)
 # ----------------------------------------------
 
 include(FindCsound)
-include(FindPQXX)
+include(FindPostgreSQL)
 include(FindSqlite3)
 include(FindMySQL)
 
@@ -154,7 +154,7 @@ if(NOT CSOUND_FOUND)
   message(FATAL_ERROR "Csound installation not found")
 endif()
 
-if(NOT PQXX_FOUND AND NOT SQLITE3_FOUND AND NOT MYSQLCONNECTORCPP_FOUND)
+if(NOT PostgreSQL_FOUND AND NOT SQLITE3_FOUND AND NOT MYSQLCONNECTORCPP_FOUND)
   message(FATAL_ERROR "No database libraries could be found")
 endif()
 
@@ -168,7 +168,7 @@ endif()
 set(CPPFILES src/opcodes.cpp src/connection.cpp)
 
 
-if (PQXX_FOUND)
+if (PostgreSQL_FOUND)
   message(STATUS "Using PostgreSQL")
   list(APPEND CPPFILES "src/postgresql.cpp")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_POSTGRES")
@@ -192,9 +192,9 @@ endif()
 include_directories(${CSOUND_INCLUDE_DIRS})
 include_directories(include)
 
-if (PQXX_FOUND)
-  link_libraries(${PQXX_LIBRARIES})
-  include_directories(${PQXX_INCLUDE_DIRECTORIES})
+if (PostgreSQL_FOUND)
+  link_libraries(${PostgreSQL_LIBRARIES})
+  include_directories(${PostgreSQL_INCLUDE_DIRS})
 endif()
 
 if (SQLITE3_FOUND) 
