@@ -53,7 +53,7 @@ sqlite3_stmt* SqliteConnection::Query(char* sql) {
     return stmt;
 }
 
-MYFLT SqliteConnection::Scalar(char* sql, int row=0, int col=0) {
+MYFLT SqliteConnection::Scalar(char* sql, int row, int col) {
     sqlite3_stmt *stmt = Query(sql);
     int colCount = sqlite3_column_count(stmt);
     int rc = sqlite3_step(stmt);
@@ -76,7 +76,7 @@ MYFLT SqliteConnection::Scalar(char* sql, int row=0, int col=0) {
     throw std::runtime_error("no result");  
 }
 
-char* SqliteConnection::ScalarString(char* sql, int row=0, int col=0) {
+char* SqliteConnection::ScalarString(char* sql, int row, int col) {
     sqlite3_stmt *stmt = Query(sql);
     int colCount = sqlite3_column_count(stmt);
     int rc = sqlite3_step(stmt);

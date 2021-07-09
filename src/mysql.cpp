@@ -62,7 +62,7 @@ mysql::ResultSet* MySQLConnection::Query(char* sql) {
     return result;
 }
 
-MYFLT MySQLConnection::Scalar(char* sql, int row=0, int col=0) {
+MYFLT MySQLConnection::Scalar(char* sql, int row, int col) {
     mysql::ResultSet* res = Query(sql);
     mysql::ResultSetMetaData* meta = res->getMetaData();
     int colCount = meta->getColumnCount();
@@ -78,7 +78,7 @@ MYFLT MySQLConnection::Scalar(char* sql, int row=0, int col=0) {
     return result;
 }
 
-char* MySQLConnection::ScalarString(char* sql, int row=0, int col=0) {
+char* MySQLConnection::ScalarString(char* sql, int row, int col) {
     mysql::ResultSet* res = Query(sql);
     mysql::ResultSetMetaData* meta = res->getMetaData();
     

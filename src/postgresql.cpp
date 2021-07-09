@@ -61,7 +61,7 @@ pqxx::result PostgresConnection::Query(char* sql) {
     return result;
 }
 
-MYFLT PostgresConnection::Scalar(char* sql, int row=0, int col=0) {
+MYFLT PostgresConnection::Scalar(char* sql, int row, int col) {
     pqxx::result result = Query(sql);
 
     // checks as libpqxx not throwing if this happens
@@ -75,7 +75,7 @@ MYFLT PostgresConnection::Scalar(char* sql, int row=0, int col=0) {
     return result[row][col].as<MYFLT>();
 }
 
-char* PostgresConnection::ScalarString(char* sql, int row=0, int col=0) {
+char* PostgresConnection::ScalarString(char* sql, int row, int col) {
     pqxx::result result = Query(sql);
 
     // checks as libpqxx not throwing if this happens

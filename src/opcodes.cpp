@@ -99,7 +99,7 @@ public:
                             if (charData != NULL) {
                                 csound->free(charData);
                             }
-                            charData = csound->strdup(resultString.c_str());
+                            charData = csound->strdup((char*) resultString.c_str());
                             charSize = resultString.length() + 1;
                         }
                             break;
@@ -128,7 +128,7 @@ public:
                     status = 1;
                     done = true;
                     pending = false;
-                    error = csound->strdup(e.what());
+                    error = csound->strdup((char*) e.what());
                 }
                 UNLOCK(connection);
             }
@@ -440,12 +440,12 @@ struct dbexec : csnd::InPlug<2> {
         LOCK(connection);
         try {
             connection->Exec(sql.data);
-            return OK;
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->init_error(e.what());
         } 
         UNLOCK(connection);
-        
+       	return OK; 
     }
 };
 
@@ -461,14 +461,15 @@ struct dbscalar : csnd::Plugin<1, 4> {
             return csound->init_error(badHandle);
         }
         STRINGDAT &sql = inargs.str_data(1);
+		LOCK(connection);
         try {
-            LOCK(connection);
             outargs[0] = connection->Scalar(sql.data, inargs[2], inargs[3]);
-            UNLOCK(connection);
-            return OK;
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->init_error(e.what());
-        } 
+        }
+		UNLOCK(connection)
+		return OK;
     }
 };
 
@@ -486,16 +487,17 @@ struct dbscalarstr : csnd::Plugin<1, 4> {
         }
         STRINGDAT &sql = inargs.str_data(1);
         STRINGDAT &result = outargs.str_data(0);
+        LOCK(connection);
         try {
-            LOCK(connection);
             std::string resultString = connection->ScalarString(sql.data, inargs[2], inargs[3]);
-            UNLOCK(connection);
             result.size = resultString.length() + 1;
-            result.data = csound->strdup(resultString.c_str());
-            return OK;
+            result.data = csound->strdup((char*)resultString.c_str());
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->init_error(e.what());
-        } 
+        }
+		UNLOCK(connection);
+		return OK;
     }
 };
 
@@ -516,15 +518,16 @@ struct dbarray : csnd::Plugin<1, 2> {
         STRINGDAT &sql = inargs.str_data(1);
 
         ARRAYDAT* array = (ARRAYDAT*) outargs(0);
-
+		LOCK(connection);
         try {
-            LOCK(connection);
             connection->ArrayQuery(sql.data, csound, array);
-            UNLOCK(connection);
             return OK;
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->init_error(e.what());
         }
+		UNLOCK(connection);
+		return OK;
     }
 };
 
@@ -544,15 +547,15 @@ struct dbarraystr : csnd::Plugin<1, 2> {
         STRINGDAT &sql = inargs.str_data(1);
 
         ARRAYDAT* array = (ARRAYDAT*) outargs(0);
-
+		LOCK(connection);
         try {
-            LOCK(connection);
             connection->ArrayQueryString(sql.data, csound, array);
-            UNLOCK(connection);
-            return OK;
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->init_error(e.what());
         }
+		UNLOCK(connection);
+		return OK;
     }
 };
 
@@ -579,14 +582,15 @@ struct dbexec_kb : csnd::InPlug<2> {
     
     int kperf() {
         STRINGDAT &sql = args.str_data(1);
+		LOCK(connection);
         try {
-            LOCK(connection);
             connection->Exec(sql.data);
-            UNLOCK(connection);
-            return OK;
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->perf_error(e.what(), this);
         } 
+		UNLOCK(connection);
+		return OK;
     }
 };
 
@@ -606,14 +610,15 @@ struct dbscalar_kb : csnd::Plugin<1, 4> {
     
     int kperf() {
         STRINGDAT &sql = inargs.str_data(1);
+		LOCK(connection);
         try {
-            LOCK(connection);
             outargs[0] = connection->Scalar(sql.data, inargs[2], inargs[3]);
-            UNLOCK(connection);
-            return OK;
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->perf_error(e.what(), this);
         } 
+		UNLOCK(connection);
+		return OK;
     }
 };
 
@@ -636,16 +641,17 @@ struct dbscalarstr_kb : csnd::Plugin<1, 4> {
             
         STRINGDAT &sql = inargs.str_data(1);
         STRINGDAT &result = outargs.str_data(0);
+		LOCK(connection);
         try {
-            LOCK(connection);
             std::string resultString = connection->ScalarString(sql.data, inargs[2], inargs[3]);
-            UNLOCK(connection);
             result.size = resultString.length() + 1;
-            result.data = csound->strdup(resultString.c_str());
-            return OK;
+            result.data = csound->strdup((char*) resultString.c_str());
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->perf_error(e.what(), this);
         } 
+		UNLOCK(connection);
+		return OK;
     }
 };
 
@@ -670,15 +676,15 @@ struct dbarray_kb : csnd::Plugin<1, 2> {
         STRINGDAT &sql = inargs.str_data(1);
 
         ARRAYDAT* array = (ARRAYDAT*) outargs(0);
-
+		LOCK(connection);
         try {
-            LOCK(connection);
             connection->ArrayQuery(sql.data, csound, array);
-            UNLOCK(connection);
-            return OK;
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->perf_error(e.what(), this);
         }
+		UNLOCK(connection);
+		return OK;
     }
 };
 
@@ -702,15 +708,15 @@ struct dbarraystr_kb : csnd::Plugin<1, 2> {
         STRINGDAT &sql = inargs.str_data(1);
 
         ARRAYDAT* array = (ARRAYDAT*) outargs(0);
-
+		LOCK(connection);
         try {
-            LOCK(connection);
             connection->ArrayQueryString(sql.data, csound, array);
-            UNLOCK(connection);
-            return OK;
         } catch (const std::exception &e) {
+			UNLOCK(connection);
             return csound->perf_error(e.what(), this);
         }
+		UNLOCK(connection);
+		return OK;
     }
 };
 
