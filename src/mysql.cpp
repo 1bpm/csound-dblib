@@ -91,7 +91,7 @@ char* MySQLConnection::ScalarString(char* sql, int row, int col) {
     for (int rowIndex = 0; rowIndex <= row; rowIndex++) {
         res->next();
     }
-    char* result = res->getString(col + 1).c_str();
+    char* result = (char*) res->getString(col + 1).c_str();
     
     delete res;
     
@@ -104,13 +104,13 @@ void MySQLConnection::ToArray(mysql::ResultSet* result, csnd::Csound* csound, AR
     int colNum = meta->getColumnCount();
     int rowNum = result->rowsCount();
     int totalResults = colNum * rowNum;
-    array->sizes = csound->calloc(sizeof(int32_t) * 2);
+    array->sizes = (int32_t*) csound->calloc(sizeof(int32_t) * 2);
     array->sizes[0] = rowNum;
     array->sizes[1] = colNum;
     array->dimensions = 2;
     CS_VARIABLE *var = array->arrayType->createVariable(csound, NULL);
     array->arrayMemberSize = var->memBlockSize;
-    array->data = csound->calloc(var->memBlockSize * totalResults);
+    array->data = (MYFLT*) csound->calloc(var->memBlockSize * totalResults);
     STRINGDAT* strings;
     if (asString) {
         strings = (STRINGDAT*) array->data;
@@ -123,7 +123,7 @@ void MySQLConnection::ToArray(mysql::ResultSet* result, csnd::Csound* csound, AR
         colIndex = 0;
         while (colIndex < colNum) {
             if (asString) {
-                char* item = result->getString(colIndex + 1).c_str();
+                char* item = (char*) result->getString(colIndex + 1).c_str();
                 strings[index].size = strlen(item) + 1;
                 strings[index].data = csound->strdup(item);
             } else {

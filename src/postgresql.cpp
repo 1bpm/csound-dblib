@@ -98,7 +98,7 @@ void PostgresConnection::ToArray(PGresult* result, csnd::Csound* csound, ARRAYDA
 	int rows = PQntuples(result);
 	int cols = PQnfields(result);
     int totalResults = rows * cols;
-    array->sizes = csound->calloc(sizeof(int32_t) * 2);
+    array->sizes = (int32_t*) csound->calloc(sizeof(int32_t) * 2);
     array->sizes[0] = rows;
     array->sizes[1] = cols;
     array->dimensions = 2;

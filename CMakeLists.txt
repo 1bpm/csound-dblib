@@ -1,217 +1,203 @@
-project("csound_sqldb")
+# from https://github.com/csound/plugins : common CMake operations
+cmake_minimum_required(VERSION 2.8.12)
+project(Csound-plugins)
 
-cmake_minimum_required(VERSION 3.8)
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+    set(CMAKE_COMPILER_IS_CLANG 1)
+endif()
+
+# C++11 needed
+if(NOT MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+endif()
 
 set(APIVERSION "6.0")
 
-# Release or Debug
-set(CMAKE_BUILD_TYPE "Release")
-
-# force make to print the command lines
-set(CMAKE_VERBOSE_MAKEFILE on)
-
-# path to Csound cmake module
+set(CMAKE_MACOSX_RPATH 1)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-# set compilation flags
-set(CMAKE_CXX_FLAGS  ${CMAKE_CXX_FLAGS}  "-std=c++11 -fpermissive -fPIC -w -DUSE_DOUBLE -DB64BIT")
-
-# options
-option(USE_LIB64 "Set to on to set installation dir for libs to lib64" OFF)
-option(USE_DOUBLE "Use doubles for audio calculations" ON)
-option(CPP11 "c++11" ON)
-
-set(BUILDING_CSOUND_PLUGINS ON)
-
-# ----------------------------------------------
-
-include(FindCsound)
-include(FindPostgreSQL)
-include(FindSqlite3)
-include(FindMySQL)
-
+include(TestBigEndian)
+include(CheckFunctionExists)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
-# -----------------------------------------------
+### COMPILER OPTIMIZATION FLAGS
+option(USE_COMPILER_OPTIMIZATIONS "Use the default Csound compiler optimization flags" ON)
+if(USE_COMPILER_OPTIMIZATIONS)
+    include(${CMAKE_SOURCE_DIR}/cmake/CompilerOptimizations.cmake)
+endif()
 
-function(addflag flag flagname)
-  check_c_compiler_flag(${flag} ${flagname})
-  if (${flagname})
-    # message(STATUS "Setting C flag ${flag}")    
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${flag}" PARENT_SCOPE)
-  endif()
-  check_cxx_compiler_flag(${flag} CXX_${flagname})
-  if (CXX_${flagname})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flag}" PARENT_SCOPE)
-  endif()
-endfunction(addflag)
+if(APPLE)
+    set(OSX_VERSION " ")
+endif()
 
+## USER OPTIONS ##
+# Optional targets, they should all default to ON (check_deps will disable them if not possible to build)
+option(USE_DOUBLE "Set to use double-precision floating point for audio samples." ON)
+option(USE_LRINT "Use lrint/lrintf for converting floating point values to integers." ON)
+option(BUILD_RELEASE "Build for release" ON)
+option(USE_GIT_COMMIT "Show the git commit in version information" ON)
 
-MACRO(SUBDIRLIST result curdir)
-  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
-  SET(dirlist "")
-  FOREACH(child ${children})
-    message(STATUS "looking at ${child}")
-    IF(IS_DIRECTORY ${curdir}/${child})
-        LIST(APPEND dirlist ${child})
-    ENDIF()
-  ENDFOREACH()
-  SET(${result} ${dirlist})
-ENDMACRO()
+# in Release configuration, set NDEBUG
+if(${CMAKE_BUILD_TYPE} MATCHES "Release")
+message("-----> Release mode")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG")
+elseif(${CMAKE_BUILD_TYPE} MATCHES "Debug")
+message("-----> Debug mode")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBETA")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DBETA")
+endif()
 
-  
-MACRO(ADD_ALL_SUBDIRECTORIES directory)
-  subdirlist(SUBDIRS ${directory})
-  message(STATUS "Found subdirs: ${SUBDIRS}")
-  foreach(SUBDIR ${SUBDIRS})
-    set(thissubdir "${directory}/${SUBDIR}")
-    if(EXISTS "${directory}/${SUBDIR}/CMakeLists.txt")
-      message(STATUS "Adding subdir: ${thissubdir}")
-      add_subdirectory(${directory}/${SUBDIR})
-    else()
-      message(WARNING "Skipping ${directory}/${SUBDIR} because no CMakeLists.txt file was found")
+# set -Werror if in Debug configuration
+if(NOT MSVC AND NOT WASM)
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 ")
+    set(CMAKE_C_FLAGS_RELEASE "-O3 ")
+    if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wall -Werror -Wno-missing-field-initializers")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -Wno-missing-field-initializers")
     endif()
-  endforeach()
-ENDMACRO()
-
-
-
-# set optimization flags
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
-  add_definitions(-fvisibility=hidden)
-  if(NATIVE)
-	add_definitions(-march=native)
-  endif()
-  
-  include(CheckCCompilerFlag)
-  include(CheckCXXCompilerFlag)
-
-  addflag(-msse HAS_SSE)
-  addflag(-msse2 HAS_SSE2)
-  addflag(-mfgpath=sse HAS_FPMATH_SSE)
-  
 endif()
 
-if(MINGW)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mstackrealign")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mstackrealign")
-endif()
 
-addflag(-ftree-vectorize HAS_TREE_VECTORIZE)
-addflag(-ffast-math HAS_FAST_MATH)
-addflag(-fomit-frame-pointer HAS_OMIT_FRAME_POINTER)
-
-
-# -------------------------------------------------------------------
-
-set(CS_FRAMEWORK_DEST "~/Library/Frameworks")
-
-
-if(USE_LIB64)
-  set(LIBRARY_INSTALL_DIR "lib64")
-  add_definitions("-DLIB64")
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    set(LINUX YES)
 else()
-  set(LIBRARY_INSTALL_DIR "lib")
+    set(LINUX NO)
 endif()
 
-message(STATUS "LIBRARY INSTALL DIR: ${LIBRARY_INSTALL_DIR}")
+set(BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
-# -------------------------------------------------------------------
-
-
-if(USE_DOUBLE)
-  message(STATUS ">>> using doubles")
-  
-  if(APPLE)
-    set(CSOUNDLIB "CsoundLib64")
-    set(PLUGIN_INSTALL_DIR "${CS_FRAMEWORK_DEST}/${CSOUNDLIB}.framework/Versions/${APIVERSION}/Resources/Opcodes64")
-  else()
-    set(CSOUNDLIB "csound64")
-    set(PLUGIN_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/csound/plugins64-${APIVERSION}")
-  endif()
-else()
-  message(STATUS ">>> not using doubles")
-  if(APPLE)
-    set(CSOUNDLIB "CsoundLib")
-    set(PLUGIN_INSTALL_DIR "${CS_FRAMEWORK_DEST}/${CSOUNDLIB}.framework/Versions/${APIVERSION}/Resources/Opcodes")
-  else()
-    set(CSOUNDLIB "csound")
-    set(PLUGIN_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/csound/plugins-${APIVERSION}")
-  endif()
+check_c_compiler_flag(-fvisibility=hidden HAS_VISIBILITY_HIDDEN)
+check_cxx_compiler_flag(-fvisibility=hidden HAS_CXX_VISIBILITY_HIDDEN)
+if (HAS_VISIBILITY_HIDDEN)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
+endif()
+if (HAS_CXX_VISIBILITY_HIDDEN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 endif()
 
+check_c_compiler_flag(-std=gnu99 HAS_GNU99)
+if (HAS_GNU99)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
+endif()
+if (HAS_CXX_VISIBILITY_HIDDEN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
+endif()
 
-# -------------------------------------------------------------------
-  
-# Csound opcode build
 find_package(Csound)
 
+option(USE_LIB64 "Set to on to set installation directory for libraries to lib64" OFF)
+if(USE_LIB64)
+    set(LIBRARY_INSTALL_DIR "lib64")
+    add_definitions("-DLIB64")
+else()
+    set(LIBRARY_INSTALL_DIR "lib")
+endif()
+message(STATUS "LIBRARY INSTALL DIR: ${LIBRARY_INSTALL_DIR}")
 
-set(BUILD_PLUGINS_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
-if(NOT CSOUND_FOUND)
-  message(FATAL_ERROR "Csound installation not found")
+if(USE_DOUBLE)
+    message(STATUS "Building with 64-bit floats")
+    set(PLUGIN_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/csound/plugins64-${APIVERSION}")
+    if(APPLE)
+        set(PLUGIN_INSTALL_DIR "${CS_FRAMEWORK_DEST}/${CSOUNDLIB}.framework/Versions/${APIVERSION}/Resources/Opcodes64")
+    endif()
+else()
+    message(STATUS "Building with 32-bit floats")
+    set(PLUGIN_INSTALL_DIR "${LIBRARY_INSTALL_DIR}/csound/plugins-${APIVERSION}")
+    if(APPLE)
+        set(PLUGIN_INSTALL_DIR "${CS_FRAMEWORK_DEST}/${CSOUNDLIB}.framework/Versions/${APIVERSION}/Resources/Opcodes")
+    endif()
 endif()
 
-if(NOT PostgreSQL_FOUND AND NOT SQLITE3_FOUND AND NOT MYSQLCONNECTORCPP_FOUND)
-  message(FATAL_ERROR "No database libraries could be found")
-endif()
 
+# Checks if dependencies for an enabled target are fulfilled.
+# If FAIL_MISSING is true and the dependencies are not fulfilled,
+# it will abort the cmake run.
+# If FAIL_MISSING is false, it will set the option to OFF.
+# If the target is not enabled, it will do nothing.
+# example: check_deps(BUILD_NEW_PARSER FLEX_EXECUTABLE BISON_EXECUTABLE)
+function(check_deps option)
+    if(${option})
+        set(i 1)
+        while( ${i} LESS ${ARGC} )
+            set(dep ${ARGV${i}})
+            if(NOT ${dep})
+                if(FAIL_MISSING)
+                    message(FATAL_ERROR
+                        "${option} is enabled, but ${dep}=\"${${dep}}\"")
+                else()
+                    message(STATUS "${dep}=\"${${dep}}\", so disabling ${option}")
+                    set(${option} OFF PARENT_SCOPE)
+                    # Set it in the local scope too
+                    set(${option} OFF)
+                endif()
+            endif()
+            math(EXPR i "${i}+1")
+        endwhile()
+    endif()
+    if(${option})
+        message(STATUS "${option} is enabled.")
+    else()
+        message(STATUS "${option} is disabled.")
+    endif()
+endfunction(check_deps)
+
+# Utility function to make plugins. All plugin targets should use this as it
+# sets up output directory set in top-level CmakeLists.txt
+# and adds the appropriate install target
 #
-#if(APPLE)
-#  add_library(sqldb SHARED ${srcs})
-#else()
-#  add_library(sqldb MODULE ${srcs})
-#endif()
+# libname - name of library to produce
+# srcs - list of src files (must be quoted if a list)
+# extralibs (OPTIONAL) - extra libraries to link the plugin to
+#
+# NB - this was moved here as it needs some VARS defined above
+# for setting up the framework
+function(make_plugin libname srcs)
+    if(APPLE)
+        add_library(${libname} SHARED ${srcs})
+    else()
+        add_library(${libname} MODULE ${srcs})
+    endif()
 
-set(CPPFILES src/opcodes.cpp src/connection.cpp)
+    set(i 2)
+    while( ${i} LESS ${ARGC} )
+        target_link_libraries(${libname} ${ARGV${i}})
+        math(EXPR i "${i}+1")
+    endwhile()
 
+    set_target_properties(${libname} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-if (PostgreSQL_FOUND)
-  message(STATUS "Using PostgreSQL")
-  list(APPEND CPPFILES "src/postgresql.cpp")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_POSTGRES")
+    install(TARGETS ${libname}
+        LIBRARY DESTINATION "${PLUGIN_INSTALL_DIR}" 
+        ARCHIVE DESTINATION "${PLUGIN_INSTALL_DIR}" )
+endfunction(make_plugin)
+
+# Linux does not have a separate libintl, it is part of libc
+set(LIBINTL_AVAIL (LIBINTL_LIBRARY OR LINUX))
+
+if(LINUX)
+    message(STATUS "Building on Linux.")
+    add_definitions(-DLINUX -DPIPES -D_GNU_SOURCE -DHAVE_SOCKETS)
+    list(APPEND libcsound_LIBS ${MATH_LIBRARY} dl)
+
 endif()
 
-if (SQLITE3_FOUND) 
-  message(STATUS "Using SQLite3")
-  list(APPEND CPPFILES "src/sqlite3.cpp")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_SQLITE")
+if(APPLE AND NOT IOS)
+    message(STATUS "Building on OSX")
+    add_definitions(-DMACOSX -DPIPES -DNO_FLTK_THREADS -DHAVE_SOCKETS)
+    find_library(ACCELERATE_LIBRARY Accelerate)
+    find_path(VECLIB_PATH "Accelerate/Accelerate.h")
+    include_directories(${VECLIB_PATH})
+    list(APPEND libcsound_LIBS ${MATH_LIBRARY} dl ${ACCELERATE_LIBRARY})
 endif()
 
-if (MYSQLCONNECTORCPP_FOUND) 
-  message(STATUS "Using MySQL")
-  list(APPEND CPPFILES "src/mysql.cpp")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_MYSQL")
+if(WIN32)
+    add_definitions(-DWIN32)
 endif()
 
-
-
-#include_directories(/usr/include)
-include_directories(${CSOUND_INCLUDE_DIRS})
-include_directories(include)
-
-if (PostgreSQL_FOUND)
-  link_libraries(${PostgreSQL_LIBRARIES})
-  include_directories(${PostgreSQL_INCLUDE_DIRS})
-endif()
-
-if (SQLITE3_FOUND) 
-  link_libraries(${SQLITE3_LIBRARIES})
-  include_directories(${SQLITE3_INCLUDE_DIRS})
-endif()
-
-if (MYSQLCONNECTORCPP_FOUND) 
-  link_libraries(${MYSQLCONNECTORCPP_LIBRARIES})
-  include_directories(${MYSQLCONNECTORCPP_INCLUDE_DIRS})
-endif()
-
-add_library(sqldb SHARED ${CPPFILES})
-
-set_target_properties(sqldb PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY ${BUILD_PLUGINS_DIR}
-  LIBRARY_OUTPUT_DIRECTORY ${BUILD_PLUGINS_DIR})
- 
-install(TARGETS sqldb LIBRARY DESTINATION "${PLUGIN_INSTALL_DIR}" )
-
+include(Plugin.cmake)
