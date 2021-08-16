@@ -15,7 +15,7 @@ Aside from the connection opcode, there are three groups available for each to a
 ## Requirements
 
  - Csound libraries
- - Cmake
+ - Cmake >= 2.8.12
  - At least one database development library from the three below. Opcodes will support whichever of these databases can be found, which will be indicated when running the initial cmake command.
 
 ### MySQL
