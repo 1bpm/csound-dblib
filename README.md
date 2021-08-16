@@ -6,6 +6,7 @@ The opcodes rely on changes made after the official 6.13.0 release of Csound so 
 
 ## Opcode overview
 The opcodes are detailed in full in OpcodeDocumentation.md
+
 Aside from the connection opcode, there are three groups available for each to allow for design options particularly when considering database latency/performance:
 
  - i-rate : to be used when db latency is particularly low, in global orchestra space or not running in realtime etc.
