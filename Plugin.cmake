@@ -19,7 +19,7 @@ if(PostgreSQL_FOUND)
   message(STATUS "Using PostgreSQL")
   list(APPEND CPPFILES "src/postgresql.cpp")
   list(APPEND INCLUDES ${PostgreSQL_INCLUDE_DIRS})
-  list(APPEND LIBS ${PostgreSQL_LIBRARES})
+  list(APPEND LIBS ${PostgreSQL_LIBRARIES})
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_POSTGRES")
 endif()
 
