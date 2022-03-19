@@ -11,7 +11,7 @@ if(NOT PostgreSQL_FOUND AND NOT SQLITE3_FOUND AND NOT MYSQLCONNECTORCPP_FOUND)
 endif()
 
 # Source files
-set(CPPFILES src/opcodes.cpp)
+set(CPPFILES src/opcodes.cpp src/connection.cpp)
 set(INCLUDES ${CSOUND_INCLUDE_DIRS} "include")
 set(LIBS "")
 

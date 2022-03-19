@@ -109,7 +109,7 @@ void ConnectionData::Exec(char* sql) {
     }
 }
 
-MYFLT ConnectionData::Scalar(char* sql, int row=0, int col=0) {
+MYFLT ConnectionData::Scalar(char* sql, int row, int col) {
     if (!open) {
         throw std::runtime_error(badConnection);
     }
@@ -136,7 +136,7 @@ MYFLT ConnectionData::Scalar(char* sql, int row=0, int col=0) {
 
 }
 
-char* ConnectionData::ScalarString(char* sql, int row=0, int col=0) {
+char* ConnectionData::ScalarString(char* sql, int row, int col) {
     if (!open) {
         throw std::runtime_error(badConnection);
     }
