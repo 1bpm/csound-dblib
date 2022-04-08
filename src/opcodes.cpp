@@ -521,7 +521,6 @@ struct dbarray : csnd::Plugin<1, 2> {
 		LOCK(connection);
         try {
             connection->ArrayQuery(sql.data, csound, array);
-            return OK;
         } catch (const std::exception &e) {
 			UNLOCK(connection);
             return csound->init_error(e.what());
