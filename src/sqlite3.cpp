@@ -28,7 +28,6 @@
 
 void SqliteConnection::Init(csnd::Csound* csound, LoginData* login) {
     int result = sqlite3_open(login->dbName, &conn);
-    std::cout << "Y";
     if (result) {
         throw std::runtime_error("connection not established");
     }

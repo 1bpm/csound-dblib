@@ -35,9 +35,7 @@ endif()
 ## USER OPTIONS ##
 # Optional targets, they should all default to ON (check_deps will disable them if not possible to build)
 option(USE_DOUBLE "Set to use double-precision floating point for audio samples." ON)
-option(USE_LRINT "Use lrint/lrintf for converting floating point values to integers." ON)
-option(BUILD_RELEASE "Build for release" ON)
-option(USE_GIT_COMMIT "Show the git commit in version information" ON)
+
 
 # in Release configuration, set NDEBUG
 if(${CMAKE_BUILD_TYPE} MATCHES "Release")
