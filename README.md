@@ -1,6 +1,6 @@
 ## Introduction
 csound-sqldb provides database access opcodes which allow for the querying of data in SQL databases at i- and k-rate.
-MySQL, PostgreSQL and SQLite3 are supported and are used with the same opcodes after the initial connection. The opcodes have currently been tested on Linux only.
+MySQL, PostgreSQL and SQLite3 are supported and are used with the same opcodes after the initial connection. The opcodes have been tested on Linux and Windows.
 
 The opcodes rely on changes made after the official 6.13.0 release of Csound so while awaiting the next release the Csound source will need to be obtained from the develop branch of https://github.com/csound/csound/ otherwise they will not build.
 
