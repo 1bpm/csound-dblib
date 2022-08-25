@@ -20,6 +20,7 @@
  */
 
 #include <plugin.h>
+#include "tools.h"
 #include <iostream>
 #include <cppconn/driver.h>
 #include <cppconn/exception.h>
@@ -67,6 +68,7 @@ MYFLT MySQLConnection::Scalar(char* sql, int row, int col) {
     mysql::ResultSetMetaData* meta = res->getMetaData();
     int colCount = meta->getColumnCount();
     if (col > colCount - 1) {
+        delete res;
         throw std::runtime_error("column number out of range");
     }
 
@@ -78,12 +80,13 @@ MYFLT MySQLConnection::Scalar(char* sql, int row, int col) {
     return result;
 }
 
-char* MySQLConnection::ScalarString(char* sql, int row, int col) {
+char* MySQLConnection::ScalarString(char* sql, csnd::Csound* csound, int row, int col) {
     mysql::ResultSet* res = Query(sql);
     mysql::ResultSetMetaData* meta = res->getMetaData();
     
     int colCount = meta->getColumnCount();
     if (col > colCount - 1) {
+        delete res;
         throw std::runtime_error("column number out of range");
     }
     
@@ -91,7 +94,7 @@ char* MySQLConnection::ScalarString(char* sql, int row, int col) {
     for (int rowIndex = 0; rowIndex <= row; rowIndex++) {
         res->next();
     }
-    char* result = (char*) res->getString(col + 1).c_str();
+    char* result = csound->strdup((char*) res->getString(col + 1).c_str());
     
     delete res;
     
@@ -101,31 +104,18 @@ char* MySQLConnection::ScalarString(char* sql, int row, int col) {
 
 void MySQLConnection::ToArray(mysql::ResultSet* result, csnd::Csound* csound, ARRAYDAT* array, bool asString) {
     mysql::ResultSetMetaData* meta = result->getMetaData();
-    int colNum = meta->getColumnCount();
-    int rowNum = result->rowsCount();
-    int totalResults = colNum * rowNum;
-    array->sizes = (int32_t*) csound->calloc(sizeof(int32_t) * 2);
-    array->sizes[0] = rowNum;
-    array->sizes[1] = colNum;
-    array->dimensions = 2;
-    CS_VARIABLE *var = array->arrayType->createVariable(csound, NULL);
-    array->arrayMemberSize = var->memBlockSize;
-    array->data = (MYFLT*) csound->calloc(var->memBlockSize * totalResults);
-    STRINGDAT* strings;
-    if (asString) {
-        strings = (STRINGDAT*) array->data;
-    }
+    int cols = meta->getColumnCount();
+    int rows = result->rowsCount();
+    STRINGDAT* strings = arrayInit(csound, array, rows, cols);
 
     int colIndex;
     int index = 0;
     
     while (result->next()) {
         colIndex = 0;
-        while (colIndex < colNum) {
+        while (colIndex < cols) {
             if (asString) {
-                char* item = (char*) result->getString(colIndex + 1).c_str();
-                strings[index].size = strlen(item) + 1;
-                strings[index].data = csound->strdup(item);
+                insertArrayStringItem(csound, strings, index, (char*) result->getString(colIndex + 1).c_str());
             } else {
                 array->data[index] = (MYFLT) result->getDouble(colIndex + 1);
             }

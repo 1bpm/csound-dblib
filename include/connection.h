@@ -19,8 +19,8 @@
  
  */
 
-#ifndef CONNECTION_H
-#define CONNECTION_H
+#ifndef CSSQLDB_CONNECTION_H
+#define CSSQLDB_CONNECTION_H
 #include <plugin.h>
 #include "logindata.h"
 
@@ -68,7 +68,7 @@ struct ConnectionData {
     void Close(csnd::Csound* csound);
     void Exec(char* sql);
     MYFLT Scalar(char* sql, int row, int col);
-    char* ScalarString(char* sql, int row=0, int col=0);
+    char* ScalarString(char* sql, csnd::Csound* csound, int row=0, int col=0);
     void ArrayQuery(char* sql, csnd::Csound* csound, ARRAYDAT* array);
     void ArrayQueryString(char* sql, csnd::Csound* csound, ARRAYDAT* array);
 };

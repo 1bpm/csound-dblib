@@ -19,8 +19,8 @@
  
  */
 
-#ifndef POSTGRESQL_H
-#define POSTGRESQL_H
+#ifndef CSSQLDB_POSTGRESQL_H
+#define CSSQLDB_POSTGRESQL_H
 
 #include <plugin.h>
 #include "libpq-fe.h"
@@ -33,7 +33,7 @@ struct PostgresConnection {
     void Exec(char* sql);
     PGresult* Query(char *sql);
     MYFLT Scalar(char* sql, int row, int col);
-    char* ScalarString(char* sql, int row, int col);
+    char* ScalarString(char* sql, csnd::Csound* csound, int row, int col);
     void ToArray(PGresult* result, csnd::Csound* csound, ARRAYDAT* array, bool asString);
     void ArrayQuery(char* sql, csnd::Csound* csound, ARRAYDAT* array);
     void ArrayQueryString(char* sql, csnd::Csound* csound, ARRAYDAT* array);

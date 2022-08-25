@@ -19,8 +19,8 @@
  
  */
 
-#ifndef XSQLITE3_H
-#define XSQLITE3_H
+#ifndef CSSQLDB_SQLITE3_H
+#define CSSQLDB_SQLITE3_H
 
 #include <plugin.h>
 #include <sqlite3.h>
@@ -33,7 +33,7 @@ struct SqliteConnection {
     void Exec(char* sql);
     sqlite3_stmt* Query(char *sql);
     MYFLT Scalar(char* sql, int row, int col);
-    char* ScalarString(char* sql, int row, int col);
+    char* ScalarString(char* sql, csnd::Csound* csound, int row, int col);
     int RowCount(sqlite3_stmt* stmt);
     void ToArray(sqlite3_stmt* result, csnd::Csound* csound, ARRAYDAT* array, bool asString);
     void ArrayQuery(char* sql, csnd::Csound* csound, ARRAYDAT* array);

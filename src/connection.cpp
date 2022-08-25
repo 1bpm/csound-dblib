@@ -136,7 +136,7 @@ MYFLT ConnectionData::Scalar(char* sql, int row, int col) {
 
 }
 
-char* ConnectionData::ScalarString(char* sql, int row, int col) {
+char* ConnectionData::ScalarString(char* sql, csnd::Csound* csound, int row, int col) {
     if (!open) {
         throw std::runtime_error(badConnection);
     }
@@ -144,17 +144,17 @@ char* ConnectionData::ScalarString(char* sql, int row, int col) {
     switch (type) {
 #ifdef BUILD_POSTGRES
         case POSTGRES:
-            return postgres->ScalarString(sql, row, col);
+            return postgres->ScalarString(sql, csound, row, col);
             break;
 #endif
 #ifdef BUILD_SQLITE
         case SQLITE:
-            return sqlite->ScalarString(sql, row, col);
+            return sqlite->ScalarString(sql, csound, row, col);
             break;
 #endif
 #ifdef BUILD_MYSQL
         case MYSQL:
-            return mysql->ScalarString(sql, row, col);
+            return mysql->ScalarString(sql, csound, row, col);
             break;
 #endif
         default:

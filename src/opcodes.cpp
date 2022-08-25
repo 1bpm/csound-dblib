@@ -95,7 +95,7 @@ public:
                 try {     
                     switch (queryData->queryType) {
                         case SCALARSTRING: {
-                            std::string resultString = connection->ScalarString(queryData->sql, queryData->row, queryData->col);
+                            std::string resultString = connection->ScalarString(queryData->sql, csound, queryData->row, queryData->col);
                             if (charData != NULL) {
                                 csound->free(charData);
                             }
@@ -480,6 +480,7 @@ struct dbscalarstr : csnd::Plugin<1, 4> {
     static constexpr char const *otypes = "S";
     static constexpr char const *itypes = "iSoo";
     ConnectionData* connection;
+    char* resultString;
     
     int init() {
         if (!(connection = getConnection(csound, inargs[0]))) {
@@ -489,9 +490,12 @@ struct dbscalarstr : csnd::Plugin<1, 4> {
         STRINGDAT &result = outargs.str_data(0);
         LOCK(connection);
         try {
-            std::string resultString = connection->ScalarString(sql.data, inargs[2], inargs[3]);
-            result.size = resultString.length() + 1;
-            result.data = csound->strdup((char*)resultString.c_str());
+            if (resultString != NULL) {
+                csound->free(resultString);
+            }
+            resultString = connection->ScalarString(sql.data, csound, inargs[2], inargs[3]);
+            result.size = strlen(resultString) + 1;
+            result.data = resultString;
         } catch (const std::exception &e) {
 			UNLOCK(connection);
             return csound->init_error(e.what());
@@ -642,9 +646,9 @@ struct dbscalarstr_kb : csnd::Plugin<1, 4> {
         STRINGDAT &result = outargs.str_data(0);
 		LOCK(connection);
         try {
-            std::string resultString = connection->ScalarString(sql.data, inargs[2], inargs[3]);
-            result.size = resultString.length() + 1;
-            result.data = csound->strdup((char*) resultString.c_str());
+            char* resultString = connection->ScalarString(sql.data, csound, inargs[2], inargs[3]);
+            result.size = strlen(resultString) + 1;
+            result.data = resultString;
         } catch (const std::exception &e) {
 			UNLOCK(connection);
             return csound->perf_error(e.what(), this);

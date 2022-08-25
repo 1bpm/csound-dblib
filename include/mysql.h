@@ -19,8 +19,8 @@
  
  */
 
-#ifndef MYSQL_H
-#define MYSQL_H
+#ifndef CSSQLDB_MYSQL_H
+#define CSSQLDB_MYSQL_H
 
 #include <plugin.h>
 #include <cppconn/driver.h>
@@ -37,7 +37,7 @@ struct MySQLConnection {
     void Exec(char* sql);
     mysql::ResultSet* Query(char *sql);
     MYFLT Scalar(char* sql, int row, int col);
-    char* ScalarString(char* sql, int row, int col);
+    char* ScalarString(char* sql, csnd::Csound* csound, int row, int col);
     void ToArray(mysql::ResultSet* result, csnd::Csound* csound, ARRAYDAT* array, bool asString);
     void ArrayQuery(char* sql, csnd::Csound* csound, ARRAYDAT* array);
     void ArrayQueryString(char* sql, csnd::Csound* csound, ARRAYDAT* array);

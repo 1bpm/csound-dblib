@@ -20,11 +20,11 @@
  */
 
 #include <plugin.h>
+#include "tools.h"
 #include <iostream>
 #include "libpq-fe.h"
 #include "connection.h"
 #include "postgresql.h"
-
 
 
 void PostgresConnection::Init(csnd::Csound* csound, LoginData* login) {
@@ -62,9 +62,11 @@ MYFLT PostgresConnection::Scalar(char* sql, int row, int col) {
 	int cols = PQnfields(result);
     
     if (row > rows - 1) {
+        PQclear(result);
         throw std::runtime_error("row number out of range");
     }
     if (col > cols - 1) {
+        PQclear(result);
         throw std::runtime_error("column number out of range");
     }
 
@@ -73,23 +75,24 @@ MYFLT PostgresConnection::Scalar(char* sql, int row, int col) {
 	return value;
 }
 
-char* PostgresConnection::ScalarString(char* sql, int row, int col) {
+char* PostgresConnection::ScalarString(char* sql, csnd::Csound* csound, int row, int col) {
     PGresult* result = Query(sql);
 
 	int rows = PQntuples(result);
 	int cols = PQnfields(result);
 
     if (row > rows - 1) {
+        PQclear(result);
         throw std::runtime_error("row number out of range");
     }
     if (col > cols -1) {
+        PQclear(result);
         throw std::runtime_error("column number out of range");
     }
 
-	char* value = (char*) PQgetvalue(result, row, col);
+	char* value = csound->strdup(PQgetvalue(result, row, col));
 	PQclear(result);
 	return value;
-
 
 }
 
@@ -97,28 +100,15 @@ char* PostgresConnection::ScalarString(char* sql, int row, int col) {
 void PostgresConnection::ToArray(PGresult* result, csnd::Csound* csound, ARRAYDAT* array, bool asString) {
 	int rows = PQntuples(result);
 	int cols = PQnfields(result);
-    int totalResults = rows * cols;
-    array->sizes = (int32_t*) csound->calloc(sizeof(int32_t) * 2);
-    array->sizes[0] = rows;
-    array->sizes[1] = cols;
-    array->dimensions = 2;
-    CS_VARIABLE *var = array->arrayType->createVariable(csound, NULL);
-    array->arrayMemberSize = var->memBlockSize;
-    array->data = (MYFLT*) csound->calloc(var->memBlockSize * totalResults);
-    STRINGDAT* strings;
-    if (asString) {
-        strings = (STRINGDAT*) array->data;
-    }
+    STRINGDAT* strings = arrayInit(csound, array, rows, cols);
 
     int index = 0;
-    for (int rowNum = 0; rowNum < rows; ++rowNum) {
-        for (int colNum = 0; colNum < cols; ++colNum) {
+    for (int rowIndex = 0; rowIndex < rows; ++rowIndex) {
+        for (int colIndex = 0; colIndex < cols; ++colIndex) {
             if (asString) {
-                char* item = (char*) PQgetvalue(result, rowNum, colNum);
-                strings[index].size = strlen(item) + 1;
-                strings[index].data = csound->strdup(item);
+                insertArrayStringItem(csound, strings, index, (char*) PQgetvalue(result, rowIndex, colIndex));
             } else {
-                array->data[index] = (MYFLT) atof(PQgetvalue(result, rowNum, colNum));
+                array->data[index] = (MYFLT) atof(PQgetvalue(result, rowIndex, colIndex));
             }
             index++;
         }

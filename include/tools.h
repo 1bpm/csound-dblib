@@ -1,6 +1,6 @@
 /*
-    logindata.h
-    Copyright (C) 2019 Richard Knight
+    tools.h
+    Copyright (C) 2022 Richard Knight
 
 
     This program is free software; you can redistribute it and/or
@@ -19,16 +19,12 @@
  
  */
 
-#ifndef CSSQLDB_LOGINDATA_H
-#define CSSQLDB_LOGINDATA_H
+#ifndef CSSQLDB_TOOLS_H
+#define CSSQLDB_TOOLS_H
 
-struct LoginData {
-    int dbType;
-    char* dbHost;
-    char* dbName;
-    char* dbUser;
-    char* dbPass;
-};
+#include <plugin.h>
 
-#endif /* LOGINDATA_H */
+STRINGDAT* arrayInit(csnd::Csound* csound, ARRAYDAT* array, int rows, int cols);
+void insertArrayStringItem(csnd::Csound* csound, STRINGDAT* strings, int index, char* item);
 
+#endif /* TOOLS_H */

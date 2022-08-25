@@ -20,6 +20,7 @@
  */
 
 #include <plugin.h>
+#include "tools.h"
 #include <iostream>
 #include <sqlite3.h>
 #include "connection.h"
@@ -56,14 +57,16 @@ MYFLT SqliteConnection::Scalar(char* sql, int row, int col) {
     sqlite3_stmt *stmt = Query(sql);
     int colCount = sqlite3_column_count(stmt);
     int rc = sqlite3_step(stmt);
+    
+    if (col > colCount -1) {
+        rc = sqlite3_finalize(stmt);
+        throw std::runtime_error("column number out of range");
+    }
+    
+    rc = sqlite3_step(stmt);
     int rowIndex = 0;
     while (rc != SQLITE_DONE && rc != SQLITE_OK) {
         if (rowIndex == row) {
-
-            if (col > colCount -1) {
-                rc = sqlite3_finalize(stmt);
-                throw std::runtime_error("column number out of range");
-            }
             MYFLT result = (MYFLT) sqlite3_column_double(stmt, col);
             rc = sqlite3_finalize(stmt);
             return result;
@@ -75,7 +78,7 @@ MYFLT SqliteConnection::Scalar(char* sql, int row, int col) {
     throw std::runtime_error("no result");  
 }
 
-char* SqliteConnection::ScalarString(char* sql, int row, int col) {
+char* SqliteConnection::ScalarString(char* sql, csnd::Csound* csound, int row, int col) {
     sqlite3_stmt *stmt = Query(sql);
     int colCount = sqlite3_column_count(stmt);
     int rc = sqlite3_step(stmt);
@@ -87,7 +90,7 @@ char* SqliteConnection::ScalarString(char* sql, int row, int col) {
                 rc = sqlite3_finalize(stmt);
                 throw std::runtime_error("column number out of range");
             }
-            char* result = (char*) sqlite3_column_text(stmt, col);
+            char* result = csound->strdup((char*) sqlite3_column_text(stmt, col));
             rc = sqlite3_finalize(stmt);
             return result;
         }
@@ -110,21 +113,11 @@ int SqliteConnection::RowCount(sqlite3_stmt* stmt) {
     return rowCount;
 }
 
+
 void SqliteConnection::ToArray(sqlite3_stmt* stmt, csnd::Csound* csound, ARRAYDAT* array, bool asString) {
-    int colNum = sqlite3_column_count(stmt);
-    int rowNum = RowCount(stmt);
-    int totalResults = colNum * rowNum;
-    array->sizes = (int32_t*) csound->calloc(sizeof(int32_t) * 2);
-    array->sizes[0] = rowNum;
-    array->sizes[1] = colNum;
-    array->dimensions = 2;
-    CS_VARIABLE *var = array->arrayType->createVariable(csound, NULL);
-    array->arrayMemberSize = var->memBlockSize;
-    array->data = (MYFLT*) csound->calloc(var->memBlockSize * totalResults);
-    STRINGDAT* strings;
-    if (asString) {
-        strings = (STRINGDAT*) array->data;
-    }
+    int cols = sqlite3_column_count(stmt);
+    int rows = RowCount(stmt);
+    STRINGDAT* strings = arrayInit(csound, array, rows, cols);
 
     int colIndex;
     int rowIndex;
@@ -132,11 +125,9 @@ void SqliteConnection::ToArray(sqlite3_stmt* stmt, csnd::Csound* csound, ARRAYDA
     int rc = sqlite3_step(stmt);
     while (rc != SQLITE_DONE && rc != SQLITE_OK) {
         colIndex = 0;
-        while (colIndex < colNum) {
+        while (colIndex < cols) {
             if (asString) {
-                char* item = (char*) sqlite3_column_text(stmt, colIndex);
-                strings[index].size = strlen(item) + 1;
-                strings[index].data = csound->strdup(item);
+                insertArrayStringItem(csound, strings, index, (char*) sqlite3_column_text(stmt, colIndex));
             } else {
                 array->data[index] = (MYFLT) sqlite3_column_double(stmt, colIndex);
             }
