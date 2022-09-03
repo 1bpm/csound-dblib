@@ -22,24 +22,24 @@ Aside from the connection opcode, there are three groups available for each to a
 ### MySQL
 Connector/C++ (https://dev.mysql.com/downloads/connector/cpp/)
 
-	# apt get install libmysqlcppconn-dev
+	# apt-get install libmysqlcppconn-dev
 
 ### PostgreSQL
 libpq (https://www.postgresql.org/download/)
 
-	# apt get install libpq-dev
+	# apt-get install libpq-dev
 	
 ### SQLite
 libsqlite (https://www.sqlite.org/download.html)
 	
-	# apt get install libsqlite3-dev
+	# apt-get install libsqlite3-dev
 
 
 ## Building
 Create a build directory at the top of the source tree, execute *cmake ..*, *make* and optionally *make install* as root. If the latter is not used/possible then the resulting libsqldb.so can be used with the *--opcode-lib* flag in Csound.
 eg:
 
-	git clone https://github.com/1bpm/csound-sqldb.git
+	git clone https://git.1bpm.net/csound-sqldb
 	cd csound-sqldb
 	mkdir build && cd build
 	cmake ..
@@ -48,6 +48,7 @@ eg:
 ## Examples
 A number of examples are included in the examples directory. Generally the syntax of each opcode is agnostic to the database type used, so the different techniques in each can be used for any database type.
 
-
+## Reference
+OpcodeDocumentation.md contains an explanation of all provided opcodes.
 
 By Richard Knight 2019
